@@ -1,7 +1,165 @@
-﻿services:
+services:
   gamehub:
     image: gamehub
     build:
       context: .
       dockerfile: GameHub/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      Redis__ServiceName: mymaster
+      Redis__Sentinels__0: sentinel-1:26379
+      Redis__Sentinels__1: sentinel-2:26379
+      Redis__Sentinels__2: sentinel-3:26379
+    depends_on:
+      sentinel-1:
+        condition: service_healthy
+      sentinel-2:
+        condition: service_healthy
+      sentinel-3:
+        condition: service_healthy
+    networks:
+      - gamehub-network
 
+  redis-master:
+    image: redis:7.4.11-alpine
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/master/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis-master-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gamehub-network
+
+  redis-replica-1:
+    image: redis:7.4.11-alpine
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+      - --replica-announce-ip
+      - redis-replica-1
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./redis/replica/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis-replica-1-data:/data
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gamehub-network
+
+  redis-replica-2:
+    image: redis:7.4.11-alpine
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+      - --replica-announce-ip
+      - redis-replica-2
+    ports:
+      - "6381:6379"
+    volumes:
+      - ./redis/replica/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis-replica-2-data:/data
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gamehub-network
+
+  sentinel-1:
+    image: redis:7.4.11-alpine
+    environment:
+      SENTINEL_HOST: sentinel-1
+    command: ["sh", "-c", "sed 's/__SENTINEL_HOST__/'\"$$SENTINEL_HOST\"'/g' /etc/redis/sentinel.conf > /tmp/sentinel.conf && exec redis-sentinel /tmp/sentinel.conf"]
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel/sentinel.conf:/etc/redis/sentinel.conf:ro
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica-1:
+        condition: service_healthy
+      redis-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "SENTINEL", "get-master-addr-by-name", "mymaster"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gamehub-network
+
+  sentinel-2:
+    image: redis:7.4.11-alpine
+    environment:
+      SENTINEL_HOST: sentinel-2
+    command: ["sh", "-c", "sed 's/__SENTINEL_HOST__/'\"$$SENTINEL_HOST\"'/g' /etc/redis/sentinel.conf > /tmp/sentinel.conf && exec redis-sentinel /tmp/sentinel.conf"]
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./redis/sentinel/sentinel.conf:/etc/redis/sentinel.conf:ro
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica-1:
+        condition: service_healthy
+      redis-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "SENTINEL", "get-master-addr-by-name", "mymaster"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gamehub-network
+
+  sentinel-3:
+    image: redis:7.4.11-alpine
+    environment:
+      SENTINEL_HOST: sentinel-3
+    command: ["sh", "-c", "sed 's/__SENTINEL_HOST__/'\"$$SENTINEL_HOST\"'/g' /etc/redis/sentinel.conf > /tmp/sentinel.conf && exec redis-sentinel /tmp/sentinel.conf"]
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./redis/sentinel/sentinel.conf:/etc/redis/sentinel.conf:ro
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica-1:
+        condition: service_healthy
+      redis-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "SENTINEL", "get-master-addr-by-name", "mymaster"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gamehub-network
+
+volumes:
+  redis-master-data:
+  redis-replica-1-data:
+  redis-replica-2-data:
+
+networks:
+  gamehub-network:
+    driver: bridge
