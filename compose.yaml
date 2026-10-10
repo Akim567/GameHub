@@ -1,0 +1,7 @@
+﻿services:
+  gamehub:
+    image: gamehub
+    build:
+      context: .
+      dockerfile: GameHub/Dockerfile
+
