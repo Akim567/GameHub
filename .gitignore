@@ -1,0 +1,20 @@
+# Build results
+**/bin/
+**/obj/
+
+# IDE settings
+.idea/
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db
