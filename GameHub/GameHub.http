@@ -1,0 +1,91 @@
+@baseUrl = http://localhost:8080
+
+### Create player 1
+POST {{baseUrl}}/api/players/player-1
+Content-Type: application/json
+
+{
+  "name": "Alex",
+  "level": 10,
+  "region": "EU"
+}
+
+### Create player 2
+POST {{baseUrl}}/api/players/player-2
+Content-Type: application/json
+
+{
+  "name": "Sam",
+  "level": 7,
+  "region": "NA"
+}
+
+### Get player (first request is MISS, second is HIT)
+GET {{baseUrl}}/api/players/player-1
+
+### Update level and create a notification
+PATCH {{baseUrl}}/api/players/player-1/level
+Content-Type: application/json
+
+{
+  "delta": 3
+}
+
+### Record login
+POST {{baseUrl}}/api/players/player-1/login
+
+### Add leaderboard score
+POST {{baseUrl}}/api/leaderboard/score
+Content-Type: application/json
+
+{
+  "playerId": "player-1",
+  "score": 125.5
+}
+
+### Get top players
+GET {{baseUrl}}/api/leaderboard/top?limit=10
+
+### Get player rank
+GET {{baseUrl}}/api/leaderboard/rank/player-1
+
+### Add achievement to player 1
+POST {{baseUrl}}/api/players/player-1/achievements
+Content-Type: application/json
+
+{
+  "achievementName": "first-win"
+}
+
+### Add the same achievement to player 2
+POST {{baseUrl}}/api/players/player-2/achievements
+Content-Type: application/json
+
+{
+  "achievementName": "first-win"
+}
+
+### Check achievement
+GET {{baseUrl}}/api/players/player-1/achievements/first-win
+
+### Get common achievements
+GET {{baseUrl}}/api/players/player-1/achievements/common/player-2
+
+### Create 10 players through a Redis pipeline
+POST {{baseUrl}}/api/players/batch
+Content-Type: application/json
+
+{
+  "players": [
+    { "id": "batch-01", "name": "Player 01", "level": 1, "region": "EU" },
+    { "id": "batch-02", "name": "Player 02", "level": 2, "region": "EU" },
+    { "id": "batch-03", "name": "Player 03", "level": 3, "region": "EU" },
+    { "id": "batch-04", "name": "Player 04", "level": 4, "region": "EU" },
+    { "id": "batch-05", "name": "Player 05", "level": 5, "region": "EU" },
+    { "id": "batch-06", "name": "Player 06", "level": 6, "region": "NA" },
+    { "id": "batch-07", "name": "Player 07", "level": 7, "region": "NA" },
+    { "id": "batch-08", "name": "Player 08", "level": 8, "region": "NA" },
+    { "id": "batch-09", "name": "Player 09", "level": 9, "region": "NA" },
+    { "id": "batch-10", "name": "Player 10", "level": 10, "region": "NA" }
+  ]
+}

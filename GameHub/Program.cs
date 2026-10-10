@@ -1,10 +1,12 @@
 using GameHub.Configuration;
 using GameHub.Infrastructure;
+using GameHub.Services;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(serviceProvider =>
@@ -21,15 +23,12 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(serviceProvider =>
     return RedisConnectionFactory.Connect(settings, logger);
 });
 builder.Services.AddHostedService<RedisStartupCheck>();
+builder.Services.AddSingleton<GameHubRedisService>();
+builder.Services.AddHostedService<NotificationConsumer>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
+app.MapOpenApi();
+app.MapControllers();
 
 app.Run();
